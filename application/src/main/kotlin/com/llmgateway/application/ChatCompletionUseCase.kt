@@ -23,8 +23,12 @@ class ChatCompletionUseCase(
     private val reserveForOutput: Int,
     private val defaultProvider: ProviderId,
     private val usageSink: UsageSink,
+    private val rateLimiter: RateLimiter,
+    private val backendFailurePolicy: BackendFailurePolicy,
 ) {
-    fun stream(request: CompletionRequest): Flow<TokenChunk> {
+    fun stream(request: CompletionRequest, clientId: String): Flow<TokenChunk> {
+        enforceRateLimit(clientId)
+
         val budget = ContextBudget(window, reserveForOutput).fit(request.messages, tokenizer)
         val providerId = request.providerId ?: defaultProvider
         val provider = registry.resolve(providerId)
@@ -54,6 +58,22 @@ class ChatCompletionUseCase(
                     ),
                 )
             }
+    }
+
+    /**
+     * 공급자 호출 전에 레이트 리밋을 강제한다.
+     * 백엔드 장애 시 설정된 Fail-Open/Fail-Closed 정책을 적용한다.
+     */
+    private fun enforceRateLimit(clientId: String) {
+        val allowed = try {
+            rateLimiter.tryAcquire(clientId)
+        } catch (e: RateLimiterBackendException) {
+            when (backendFailurePolicy) {
+                BackendFailurePolicy.FAIL_OPEN -> true
+                BackendFailurePolicy.FAIL_CLOSED -> false
+            }
+        }
+        if (!allowed) throw RateLimitExceededException(clientId)
     }
 
     private fun millisSince(from: Long, to: Long): Long = (to - from) / 1_000_000

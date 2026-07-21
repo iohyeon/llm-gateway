@@ -10,6 +10,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.codec.ServerSentEvent
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
@@ -24,8 +25,11 @@ class ChatController(
 ) {
     /** 토큰 단위 스트리밍. decode 루프의 각 토큰을 SSE 이벤트로 방출한다. */
     @PostMapping("/stream", produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
-    fun stream(@RequestBody body: ChatRequestDto): Flow<ServerSentEvent<String>> =
-        useCase.stream(body.toDomain())
+    fun stream(
+        @RequestBody body: ChatRequestDto,
+        @RequestHeader(name = CLIENT_ID_HEADER, required = false) clientId: String?,
+    ): Flow<ServerSentEvent<String>> =
+        useCase.stream(body.toDomain(), clientId ?: ANONYMOUS)
             .map { chunk ->
                 ServerSentEvent.builder(chunk.text)
                     .event("token")
@@ -35,11 +39,19 @@ class ChatController(
 
     /** 비스트리밍. 전체 토큰을 모아 한 번에 반환한다. */
     @PostMapping(produces = [MediaType.APPLICATION_JSON_VALUE])
-    suspend fun complete(@RequestBody body: ChatRequestDto): ChatResponseDto {
-        val content = useCase.stream(body.toDomain())
+    suspend fun complete(
+        @RequestBody body: ChatRequestDto,
+        @RequestHeader(name = CLIENT_ID_HEADER, required = false) clientId: String?,
+    ): ChatResponseDto {
+        val content = useCase.stream(body.toDomain(), clientId ?: ANONYMOUS)
             .map { it.text }
             .toList()
             .joinToString("")
         return ChatResponseDto(content)
+    }
+
+    private companion object {
+        const val CLIENT_ID_HEADER = "X-Client-Id"
+        const val ANONYMOUS = "anonymous"
     }
 }

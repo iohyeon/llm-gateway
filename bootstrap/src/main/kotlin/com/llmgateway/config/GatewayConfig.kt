@@ -2,12 +2,14 @@ package com.llmgateway.config
 
 import com.llmgateway.application.ChatCompletionUseCase
 import com.llmgateway.application.ProviderRegistry
+import com.llmgateway.application.RateLimiter
 import com.llmgateway.application.UsageSink
 import com.llmgateway.core.context.ContextWindow
 import com.llmgateway.core.provider.LlmProvider
 import com.llmgateway.core.token.Tokenizer
 import com.llmgateway.provider.anthropic.AnthropicProvider
 import com.llmgateway.provider.openai.OpenAiProvider
+import com.llmgateway.ratelimit.InMemoryTokenBucketRateLimiter
 import com.llmgateway.tokenizer.bpe.BpeTokenizerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -61,10 +63,18 @@ class GatewayConfig {
     }
 
     @Bean
+    fun rateLimiter(props: GatewayProperties): RateLimiter =
+        InMemoryTokenBucketRateLimiter(
+            capacity = props.rateLimitCapacity,
+            refillPerSecond = props.rateLimitRefillPerSecond,
+        )
+
+    @Bean
     fun chatCompletionUseCase(
         tokenizer: Tokenizer,
         registry: ProviderRegistry,
         usageSink: UsageSink,
+        rateLimiter: RateLimiter,
         props: GatewayProperties,
     ): ChatCompletionUseCase = ChatCompletionUseCase(
         tokenizer = tokenizer,
@@ -73,5 +83,7 @@ class GatewayConfig {
         reserveForOutput = props.reserveOutputTokens,
         defaultProvider = props.defaultProvider,
         usageSink = usageSink,
+        rateLimiter = rateLimiter,
+        backendFailurePolicy = props.rateLimitOnBackendError,
     )
 }

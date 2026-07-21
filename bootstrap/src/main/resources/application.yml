@@ -6,10 +6,15 @@ server:
   port: 8080
 
 gateway:
-  # 환경변수 LLM_PROVIDER 로 기본 공급자 지정 (anthropic | fake). 미설정 시 fake.
+  # 환경변수 LLM_PROVIDER 로 기본 공급자 지정 (anthropic | openai | fake). 미설정 시 fake.
   default-provider: ${LLM_PROVIDER:fake}
   context-window-tokens: 200000
   reserve-output-tokens: 4096
+  # 레이트 리밋: 클라이언트(X-Client-Id)당 토큰 버킷.
+  rate-limit-capacity: 20
+  rate-limit-refill-per-second: 5.0
+  # 백엔드 장애 시 정책: fail-open(가용성 우선) | fail-closed(비용 보호).
+  rate-limit-on-backend-error: fail-open
 
 anthropic:
   # BYO-key: 레포에 값이 없다. .env 또는 환경변수로만 주입한다.

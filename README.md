@@ -82,8 +82,9 @@ curl -X POST http://localhost:8080/v1/chat \
 - [x] adapter-provider-anthropic (Anthropic Messages API 스트리밍, BYO-key)
 - [x] adapter-tokenizer-bpe 실제 byte-level BPE 구현 (학습 + 인코딩/디코딩)
 - [x] adapter-provider-openai (Chat Completions 스트리밍, 프리셋→temperature/top_p 번역)
+- [x] Rate Limiting (인메모리 토큰 버킷, X-Client-Id 단위) + Fail-Open/Fail-Closed 정책
 - [ ] adapter-provider-gemini
-- [ ] Rate Limiting · Fail-Open 폴백 · 시맨틱 캐시
+- [ ] Redis 분산 레이트 리밋 · 시맨틱 캐시
 
 ## 학습 배경
 
