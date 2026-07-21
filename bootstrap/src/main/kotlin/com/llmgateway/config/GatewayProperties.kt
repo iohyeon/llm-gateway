@@ -18,6 +18,10 @@ data class GatewayProperties(
     val rateLimitCapacity: Long = 20,
     val rateLimitRefillPerSecond: Double = 5.0,
     val rateLimitOnBackendError: BackendFailurePolicy = BackendFailurePolicy.FAIL_OPEN,
+    // 시맨틱 캐시: 활성 여부, 유사도 임계값(1.0=동일), 최대 항목 수.
+    val cacheEnabled: Boolean = false,
+    val cacheSimilarityThreshold: Double = 0.97,
+    val cacheMaxEntries: Int = 1_000,
 )
 
 /** 레이트 리밋 저장소 선택. */

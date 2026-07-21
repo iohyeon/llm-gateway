@@ -84,7 +84,9 @@ curl -X POST http://localhost:8080/v1/chat \
 - [x] adapter-provider-openai (Chat Completions 스트리밍, 프리셋→temperature/top_p 번역)
 - [x] adapter-provider-gemini (streamGenerateContent, 프리셋→temperature/top_p/top_k 번역)
 - [x] Rate Limiting (인메모리 + Redis 분산 토큰 버킷, X-Client-Id 단위) + Fail-Open/Fail-Closed 정책
-- [ ] 시맨틱 캐시 · 인증/쿼터
+- [x] 관측 (Actuator + Micrometer/Prometheus, provider·cache 태그)
+- [x] 시맨틱 캐시 (임베딩 유사도, 로컬 해싱 임베더 기본 / 실제 임베딩 모델은 같은 포트에 교체)
+- [ ] 인증·쿼터 · 실제 임베딩 모델 어댑터 · 벡터 인덱스(ANN)
 
 ## 학습 배경
 

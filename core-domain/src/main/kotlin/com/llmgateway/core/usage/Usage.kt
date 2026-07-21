@@ -21,4 +21,5 @@ data class UsageRecord(
     val costEstimate: CostEstimate?,
     val ttftMillis: Long,
     val tpotMillis: Long,
+    val cacheHit: Boolean = false,
 )

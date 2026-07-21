@@ -3,10 +3,8 @@ package com.llmgateway.provider
 import com.llmgateway.application.UsageSink
 import com.llmgateway.core.usage.UsageRecord
 import org.slf4j.LoggerFactory
-import org.springframework.stereotype.Component
 
-/** 사용량을 로그로 남기는 싱크. 추후 메트릭·저장 싱크로 확장한다. */
-@Component
+/** 사용량을 로그로 남기는 싱크. 조립 계층에서 composite 로 메트릭 싱크와 함께 묶인다. */
 class LoggingUsageSink : UsageSink {
 
     private val log = LoggerFactory.getLogger(javaClass)

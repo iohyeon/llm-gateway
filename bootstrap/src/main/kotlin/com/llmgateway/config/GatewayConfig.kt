@@ -2,8 +2,15 @@ package com.llmgateway.config
 
 import com.llmgateway.application.ChatCompletionUseCase
 import com.llmgateway.application.ProviderRegistry
+import com.llmgateway.application.Embedder
 import com.llmgateway.application.RateLimiter
+import com.llmgateway.application.ResponseCache
 import com.llmgateway.application.UsageSink
+import com.llmgateway.cache.HashingEmbedder
+import com.llmgateway.cache.InMemoryCosineResponseCache
+import com.llmgateway.observe.CompositeUsageSink
+import com.llmgateway.observe.MetricsUsageSink
+import com.llmgateway.provider.LoggingUsageSink
 import com.llmgateway.core.context.ContextWindow
 import com.llmgateway.core.provider.LlmProvider
 import com.llmgateway.core.token.Tokenizer
@@ -18,6 +25,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.web.reactive.function.client.WebClient
 
@@ -37,6 +45,11 @@ class GatewayConfig {
     // 번들 코퍼스로 학습한 byte-level BPE 토크나이저(직접 구현, 노트 02).
     @Bean
     fun tokenizer(): Tokenizer = BpeTokenizerFactory.default()
+
+    // 사용량을 로깅 + 메트릭 두 싱크로 팬아웃한다. 메트릭은 /actuator/prometheus 로 노출.
+    @Bean
+    fun usageSink(registry: MeterRegistry): UsageSink =
+        CompositeUsageSink(listOf(LoggingUsageSink(), MetricsUsageSink(registry)))
 
     /**
      * ANTHROPIC_API_KEY 가 설정된 경우에만 실제 공급자를 등록한다.
@@ -99,11 +112,23 @@ class GatewayConfig {
     }
 
     @Bean
+    fun embedder(): Embedder = HashingEmbedder()
+
+    @Bean
+    fun responseCache(props: GatewayProperties): ResponseCache =
+        InMemoryCosineResponseCache(
+            threshold = props.cacheSimilarityThreshold,
+            maxEntries = props.cacheMaxEntries,
+        )
+
+    @Bean
     fun chatCompletionUseCase(
         tokenizer: Tokenizer,
         registry: ProviderRegistry,
         usageSink: UsageSink,
         rateLimiter: RateLimiter,
+        embedder: Embedder,
+        responseCache: ResponseCache,
         props: GatewayProperties,
     ): ChatCompletionUseCase = ChatCompletionUseCase(
         tokenizer = tokenizer,
@@ -114,5 +139,8 @@ class GatewayConfig {
         usageSink = usageSink,
         rateLimiter = rateLimiter,
         backendFailurePolicy = props.rateLimitOnBackendError,
+        embedder = embedder,
+        responseCache = responseCache,
+        cacheEnabled = props.cacheEnabled,
     )
 }

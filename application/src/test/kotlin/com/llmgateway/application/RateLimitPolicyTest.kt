@@ -37,6 +37,15 @@ class RateLimitPolicyTest {
 
     private val request = CompletionRequest(messages = listOf(ChatMessage(Role.USER, "hi")))
 
+    private val noOpEmbedder = object : Embedder {
+        override fun embed(text: String) = FloatArray(4)
+    }
+
+    private val noOpCache = object : ResponseCache {
+        override fun lookup(embedding: FloatArray): String? = null
+        override fun store(embedding: FloatArray, response: String) {}
+    }
+
     private fun useCase(limiter: RateLimiter, policy: BackendFailurePolicy) = ChatCompletionUseCase(
         tokenizer = tokenizer,
         registry = registry,
@@ -46,6 +55,9 @@ class RateLimitPolicyTest {
         usageSink = sink,
         rateLimiter = limiter,
         backendFailurePolicy = policy,
+        embedder = noOpEmbedder,
+        responseCache = noOpCache,
+        cacheEnabled = false,
     )
 
     private fun limiter(allow: Boolean) = object : RateLimiter {

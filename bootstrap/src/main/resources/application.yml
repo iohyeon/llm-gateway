@@ -22,6 +22,10 @@ gateway:
   rate-limit-refill-per-second: 5.0
   # 백엔드 장애 시 정책: fail-open(가용성 우선) | fail-closed(비용 보호).
   rate-limit-on-backend-error: fail-open
+  # 시맨틱 캐시: 유사 프롬프트 응답 재사용. 기본 로컬 해싱 임베더(키 불필요).
+  cache-enabled: ${CACHE_ENABLED:false}
+  cache-similarity-threshold: 0.97
+  cache-max-entries: 1000
 
 anthropic:
   # BYO-key: 레포에 값이 없다. .env 또는 환경변수로만 주입한다.
@@ -40,6 +44,18 @@ gemini:
   api-key: ${GEMINI_API_KEY:}
   model: ${GEMINI_MODEL:gemini-2.0-flash}
   base-url: https://generativelanguage.googleapis.com
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 관측 대시보드: 헬스 + 메트릭 + 프로메테우스 스크레이프.
+        include: health,info,metrics,prometheus
+  health:
+    redis:
+      # Redis 는 선택 백엔드(rate-limit-backend=redis 일 때만 사용).
+      # 미사용 시 Redis ping 실패가 전체 헬스를 끌어내리지 않게 끈다.
+      enabled: false
 
 logging:
   level:
