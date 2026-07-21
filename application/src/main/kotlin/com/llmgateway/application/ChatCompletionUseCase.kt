@@ -30,6 +30,7 @@ class ChatCompletionUseCase(
     private val embedder: Embedder,
     private val responseCache: ResponseCache,
     private val cacheEnabled: Boolean,
+    private val costEstimator: CostEstimator,
 ) {
     fun stream(request: CompletionRequest, clientId: String): Flow<TokenChunk> {
         enforceRateLimit(clientId)
@@ -46,7 +47,8 @@ class ChatCompletionUseCase(
                         provider = providerId,
                         inputTokens = budget.inputTokens.value,
                         outputTokens = 0,
-                        costEstimate = null,
+                        // 캐시 히트는 공급자를 부르지 않으므로 비용 0(절감).
+                        costEstimate = costEstimator.estimate(providerId, request.model, 0, 0),
                         ttftMillis = 0,
                         tpotMillis = 0,
                         cacheHit = true,
@@ -89,7 +91,9 @@ class ChatCompletionUseCase(
                         provider = providerId,
                         inputTokens = budget.inputTokens.value,
                         outputTokens = count,
-                        costEstimate = null,
+                        costEstimate = costEstimator.estimate(
+                            providerId, request.model, budget.inputTokens.value, count,
+                        ),
                         ttftMillis = ttft,
                         tpotMillis = tpot,
                         cacheHit = false,

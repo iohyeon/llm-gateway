@@ -86,6 +86,7 @@ curl -X POST http://localhost:8080/v1/chat \
 - [x] Rate Limiting (인메모리 + Redis 분산 토큰 버킷, X-Client-Id 단위) + Fail-Open/Fail-Closed 정책
 - [x] 관측 (Actuator + Micrometer/Prometheus, provider·cache 태그)
 - [x] 시맨틱 캐시 (임베딩 유사도, 로컬 해싱 임베더 기본 / 실제 임베딩 모델은 같은 포트에 교체)
+- [x] 비용 추정 (공급자·모델 단가표 → CostEstimate + llm_cost_usd 메트릭)
 - [ ] 인증·쿼터 · 실제 임베딩 모델 어댑터 · 벡터 인덱스(ANN)
 
 ## 학습 배경

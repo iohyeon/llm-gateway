@@ -24,5 +24,6 @@ class MetricsUsageSink(
         registry.counter("llm.output.tokens", tags).increment(record.outputTokens.toDouble())
         registry.timer("llm.ttft", tags).record(record.ttftMillis, TimeUnit.MILLISECONDS)
         registry.timer("llm.tpot", tags).record(record.tpotMillis, TimeUnit.MILLISECONDS)
+        record.costEstimate?.let { registry.counter("llm.cost.usd", tags).increment(it.amount) }
     }
 }

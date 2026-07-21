@@ -2,6 +2,7 @@ package com.llmgateway.application
 
 import com.llmgateway.core.provider.LlmProvider
 import com.llmgateway.core.provider.ProviderId
+import com.llmgateway.core.usage.CostEstimate
 import com.llmgateway.core.usage.UsageRecord
 
 /** 공급자 식별자로 활성 공급자를 해석하는 포트. 구현은 조립 계층(bootstrap). */
@@ -31,4 +32,12 @@ interface Embedder {
 interface ResponseCache {
     fun lookup(embedding: FloatArray): String?
     fun store(embedding: FloatArray, response: String)
+}
+
+/**
+ * 토큰 사용량을 비용으로 추정하는 포트. 단가표(공급자·모델별)는 어댑터에 둔다.
+ * 미등록 공급자·모델이면 null.
+ */
+interface CostEstimator {
+    fun estimate(provider: ProviderId, model: String?, inputTokens: Int, outputTokens: Int): CostEstimate?
 }

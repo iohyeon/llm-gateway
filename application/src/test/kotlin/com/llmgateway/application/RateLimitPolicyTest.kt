@@ -46,6 +46,15 @@ class RateLimitPolicyTest {
         override fun store(embedding: FloatArray, response: String) {}
     }
 
+    private val noOpCostEstimator = object : CostEstimator {
+        override fun estimate(
+            provider: ProviderId,
+            model: String?,
+            inputTokens: Int,
+            outputTokens: Int,
+        ) = null
+    }
+
     private fun useCase(limiter: RateLimiter, policy: BackendFailurePolicy) = ChatCompletionUseCase(
         tokenizer = tokenizer,
         registry = registry,
@@ -58,6 +67,7 @@ class RateLimitPolicyTest {
         embedder = noOpEmbedder,
         responseCache = noOpCache,
         cacheEnabled = false,
+        costEstimator = noOpCostEstimator,
     )
 
     private fun limiter(allow: Boolean) = object : RateLimiter {

@@ -2,12 +2,14 @@ package com.llmgateway.config
 
 import com.llmgateway.application.ChatCompletionUseCase
 import com.llmgateway.application.ProviderRegistry
+import com.llmgateway.application.CostEstimator
 import com.llmgateway.application.Embedder
 import com.llmgateway.application.RateLimiter
 import com.llmgateway.application.ResponseCache
 import com.llmgateway.application.UsageSink
 import com.llmgateway.cache.HashingEmbedder
 import com.llmgateway.cache.InMemoryCosineResponseCache
+import com.llmgateway.cost.TablePricingCostEstimator
 import com.llmgateway.observe.CompositeUsageSink
 import com.llmgateway.observe.MetricsUsageSink
 import com.llmgateway.provider.LoggingUsageSink
@@ -122,6 +124,9 @@ class GatewayConfig {
         )
 
     @Bean
+    fun costEstimator(): CostEstimator = TablePricingCostEstimator()
+
+    @Bean
     fun chatCompletionUseCase(
         tokenizer: Tokenizer,
         registry: ProviderRegistry,
@@ -129,6 +134,7 @@ class GatewayConfig {
         rateLimiter: RateLimiter,
         embedder: Embedder,
         responseCache: ResponseCache,
+        costEstimator: CostEstimator,
         props: GatewayProperties,
     ): ChatCompletionUseCase = ChatCompletionUseCase(
         tokenizer = tokenizer,
@@ -142,5 +148,6 @@ class GatewayConfig {
         embedder = embedder,
         responseCache = responseCache,
         cacheEnabled = props.cacheEnabled,
+        costEstimator = costEstimator,
     )
 }
