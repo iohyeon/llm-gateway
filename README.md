@@ -41,10 +41,15 @@ cp .env.example .env      # 값을 채운다. .env 는 커밋되지 않는다.
 실제 Anthropic 으로 전환하려면 `.env` 에 본인 키를 넣고 공급자를 바꾼다.
 
 ```bash
-# .env
+# .env  (anthropic)
 LLM_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-...   # 본인 키. 커밋 금지
 ANTHROPIC_MODEL=claude-opus-4-8
+
+# 또는 openai
+# LLM_PROVIDER=openai
+# OPENAI_API_KEY=sk-...
+# OPENAI_MODEL=gpt-4o-mini
 ```
 
 ### 스트리밍 호출 (SSE)
@@ -76,7 +81,8 @@ curl -X POST http://localhost:8080/v1/chat \
 - [x] walking skeleton: fake 공급자로 SSE 스트리밍 배선 검증
 - [x] adapter-provider-anthropic (Anthropic Messages API 스트리밍, BYO-key)
 - [x] adapter-tokenizer-bpe 실제 byte-level BPE 구현 (학습 + 인코딩/디코딩)
-- [ ] adapter-provider-openai / -gemini
+- [x] adapter-provider-openai (Chat Completions 스트리밍, 프리셋→temperature/top_p 번역)
+- [ ] adapter-provider-gemini
 - [ ] Rate Limiting · Fail-Open 폴백 · 시맨틱 캐시
 
 ## 학습 배경

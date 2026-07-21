@@ -11,6 +11,7 @@ dependencies {
     implementation(project(":adapter-web"))
     implementation(project(":adapter-tokenizer-bpe"))
     implementation(project(":adapter-provider-anthropic"))
+    implementation(project(":adapter-provider-openai"))
 
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.0.21")

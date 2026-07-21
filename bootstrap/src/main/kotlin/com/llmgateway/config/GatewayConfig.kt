@@ -7,6 +7,7 @@ import com.llmgateway.core.context.ContextWindow
 import com.llmgateway.core.provider.LlmProvider
 import com.llmgateway.core.token.Tokenizer
 import com.llmgateway.provider.anthropic.AnthropicProvider
+import com.llmgateway.provider.openai.OpenAiProvider
 import com.llmgateway.tokenizer.bpe.BpeTokenizerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -19,7 +20,11 @@ import org.springframework.web.reactive.function.client.WebClient
  * core-domain·application 은 Spring 을 모른다. 여기서만 DI 로 조립한다.
  */
 @Configuration
-@EnableConfigurationProperties(GatewayProperties::class, AnthropicProperties::class)
+@EnableConfigurationProperties(
+    GatewayProperties::class,
+    AnthropicProperties::class,
+    OpenAiProperties::class,
+)
 class GatewayConfig {
 
     // 번들 코퍼스로 학습한 byte-level BPE 토크나이저(직접 구현, 노트 02).
@@ -39,6 +44,20 @@ class GatewayConfig {
             .defaultHeader("anthropic-version", "2023-06-01")
             .build()
         return AnthropicProvider(webClient = webClient, model = props.model)
+    }
+
+    /**
+     * OPENAI_API_KEY 가 설정된 경우에만 등록한다.
+     * Anthropic 과 달리 DecodePreset 이 실제 temperature/top_p 로 번역된다.
+     */
+    @Bean
+    @ConditionalOnProperty(prefix = "openai", name = ["api-key"], matchIfMissing = false)
+    fun openAiProvider(props: OpenAiProperties): LlmProvider {
+        val webClient = WebClient.builder()
+            .baseUrl(props.baseUrl)
+            .defaultHeader("Authorization", "Bearer ${props.apiKey}")
+            .build()
+        return OpenAiProvider(webClient = webClient, model = props.model)
     }
 
     @Bean

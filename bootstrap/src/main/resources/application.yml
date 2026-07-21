@@ -17,6 +17,12 @@ anthropic:
   model: ${ANTHROPIC_MODEL:claude-opus-4-8}
   base-url: https://api.anthropic.com
 
+openai:
+  # BYO-key: 레포에 값이 없다.
+  api-key: ${OPENAI_API_KEY:}
+  model: ${OPENAI_MODEL:gpt-4o-mini}
+  base-url: https://api.openai.com
+
 logging:
   level:
     com.llmgateway: INFO
