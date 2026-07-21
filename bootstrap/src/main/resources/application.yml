@@ -1,6 +1,11 @@
 spring:
   application:
     name: llm-gateway
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      # 지연 연결: redis 백엔드가 아니면 연결하지 않는다.
 
 server:
   port: 8080
@@ -11,6 +16,8 @@ gateway:
   context-window-tokens: 200000
   reserve-output-tokens: 4096
   # 레이트 리밋: 클라이언트(X-Client-Id)당 토큰 버킷.
+  # 백엔드: memory(프로세스 로컬) | redis(분산).
+  rate-limit-backend: ${RATE_LIMIT_BACKEND:memory}
   rate-limit-capacity: 20
   rate-limit-refill-per-second: 5.0
   # 백엔드 장애 시 정책: fail-open(가용성 우선) | fail-closed(비용 보호).
@@ -27,6 +34,12 @@ openai:
   api-key: ${OPENAI_API_KEY:}
   model: ${OPENAI_MODEL:gpt-4o-mini}
   base-url: https://api.openai.com
+
+gemini:
+  # BYO-key: 레포에 값이 없다.
+  api-key: ${GEMINI_API_KEY:}
+  model: ${GEMINI_MODEL:gemini-2.0-flash}
+  base-url: https://generativelanguage.googleapis.com
 
 logging:
   level:

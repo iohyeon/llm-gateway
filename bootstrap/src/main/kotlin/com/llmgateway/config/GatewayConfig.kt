@@ -8,13 +8,17 @@ import com.llmgateway.core.context.ContextWindow
 import com.llmgateway.core.provider.LlmProvider
 import com.llmgateway.core.token.Tokenizer
 import com.llmgateway.provider.anthropic.AnthropicProvider
+import com.llmgateway.provider.gemini.GeminiProvider
 import com.llmgateway.provider.openai.OpenAiProvider
 import com.llmgateway.ratelimit.InMemoryTokenBucketRateLimiter
+import com.llmgateway.ratelimit.RedisTokenBucketRateLimiter
 import com.llmgateway.tokenizer.bpe.BpeTokenizerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.web.reactive.function.client.WebClient
 
 /**
@@ -26,6 +30,7 @@ import org.springframework.web.reactive.function.client.WebClient
     GatewayProperties::class,
     AnthropicProperties::class,
     OpenAiProperties::class,
+    GeminiProperties::class,
 )
 class GatewayConfig {
 
@@ -62,12 +67,36 @@ class GatewayConfig {
         return OpenAiProvider(webClient = webClient, model = props.model)
     }
 
+    /** GEMINI_API_KEY 가 설정된 경우에만 등록한다. 세 공급자 중 가장 풍부한 프리셋 번역. */
     @Bean
-    fun rateLimiter(props: GatewayProperties): RateLimiter =
-        InMemoryTokenBucketRateLimiter(
+    @ConditionalOnProperty(prefix = "gemini", name = ["api-key"], matchIfMissing = false)
+    fun geminiProvider(props: GeminiProperties): LlmProvider {
+        val webClient = WebClient.builder()
+            .baseUrl(props.baseUrl)
+            .defaultHeader("x-goog-api-key", props.apiKey)
+            .build()
+        return GeminiProvider(webClient = webClient, model = props.model)
+    }
+
+    /**
+     * 레이트 리미터. 설정된 백엔드(memory|redis)로 선택한다.
+     * redis 선택 시에도 Redis 연결은 지연 생성되며, 장애는 Fail-Open/Fail-Closed 정책이 처리한다.
+     */
+    @Bean
+    fun rateLimiter(
+        props: GatewayProperties,
+        redisTemplate: ObjectProvider<StringRedisTemplate>,
+    ): RateLimiter = when (props.rateLimitBackend) {
+        RateLimitBackend.MEMORY -> InMemoryTokenBucketRateLimiter(
             capacity = props.rateLimitCapacity,
             refillPerSecond = props.rateLimitRefillPerSecond,
         )
+        RateLimitBackend.REDIS -> RedisTokenBucketRateLimiter(
+            redisTemplate = redisTemplate.getObject(),
+            capacity = props.rateLimitCapacity,
+            refillPerSecond = props.rateLimitRefillPerSecond,
+        )
+    }
 
     @Bean
     fun chatCompletionUseCase(

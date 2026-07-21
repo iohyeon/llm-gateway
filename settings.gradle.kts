@@ -6,6 +6,7 @@ include(
     "adapter-tokenizer-bpe",
     "adapter-provider-anthropic",
     "adapter-provider-openai",
+    "adapter-provider-gemini",
     "adapter-web",
     "bootstrap",
 )

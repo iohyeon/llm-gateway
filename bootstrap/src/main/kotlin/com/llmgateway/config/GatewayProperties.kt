@@ -13,8 +13,12 @@ data class GatewayProperties(
     val defaultProvider: ProviderId = ProviderId.FAKE,
     val contextWindowTokens: Int = 200_000,
     val reserveOutputTokens: Int = 4_096,
-    // 레이트 리밋: 클라이언트당 버킷 용량, 초당 리필 토큰, 백엔드 장애 정책.
+    // 레이트 리밋: 백엔드(memory|redis), 클라이언트당 버킷 용량, 초당 리필, 백엔드 장애 정책.
+    val rateLimitBackend: RateLimitBackend = RateLimitBackend.MEMORY,
     val rateLimitCapacity: Long = 20,
     val rateLimitRefillPerSecond: Double = 5.0,
     val rateLimitOnBackendError: BackendFailurePolicy = BackendFailurePolicy.FAIL_OPEN,
 )
+
+/** 레이트 리밋 저장소 선택. */
+enum class RateLimitBackend { MEMORY, REDIS }

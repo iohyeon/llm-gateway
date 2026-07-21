@@ -12,8 +12,10 @@ dependencies {
     implementation(project(":adapter-tokenizer-bpe"))
     implementation(project(":adapter-provider-anthropic"))
     implementation(project(":adapter-provider-openai"))
+    implementation(project(":adapter-provider-gemini"))
 
     implementation("org.springframework.boot:spring-boot-starter-webflux")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.0.21")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-reactor:1.8.1")
