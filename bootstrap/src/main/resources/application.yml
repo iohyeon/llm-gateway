@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: llm-gateway
+
+server:
+  port: 8080
+
+gateway:
+  # 환경변수 LLM_PROVIDER 로 기본 공급자 지정 (anthropic | fake). 미설정 시 fake.
+  default-provider: ${LLM_PROVIDER:fake}
+  context-window-tokens: 200000
+  reserve-output-tokens: 4096
+
+anthropic:
+  # BYO-key: 레포에 값이 없다. .env 또는 환경변수로만 주입한다.
+  api-key: ${ANTHROPIC_API_KEY:}
+  model: ${ANTHROPIC_MODEL:claude-opus-4-8}
+  base-url: https://api.anthropic.com
+
+logging:
+  level:
+    com.llmgateway: INFO
