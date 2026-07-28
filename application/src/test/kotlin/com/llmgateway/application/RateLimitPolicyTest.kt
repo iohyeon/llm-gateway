@@ -42,8 +42,8 @@ class RateLimitPolicyTest {
     }
 
     private val noOpCache = object : ResponseCache {
-        override fun lookup(embedding: FloatArray): String? = null
-        override fun store(embedding: FloatArray, response: String) {}
+        override fun lookup(namespace: String, embedding: FloatArray): String? = null
+        override fun store(namespace: String, embedding: FloatArray, response: String) {}
     }
 
     private val noOpCostEstimator = object : CostEstimator {

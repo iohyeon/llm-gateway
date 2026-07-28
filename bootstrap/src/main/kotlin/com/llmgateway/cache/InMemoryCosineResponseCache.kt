@@ -14,14 +14,17 @@ class InMemoryCosineResponseCache(
     private val maxEntries: Int,
 ) : ResponseCache {
 
-    private data class Entry(val embedding: FloatArray, val response: String)
+    private data class Entry(val namespace: String, val embedding: FloatArray, val response: String)
 
     private val entries = ConcurrentLinkedDeque<Entry>()
 
-    override fun lookup(embedding: FloatArray): String? {
+    override fun lookup(namespace: String, embedding: FloatArray): String? {
         var best: Entry? = null
         var bestSimilarity = -1.0
         for (entry in entries) {
+            // 같은 격리 키(namespace) 안에서만 유사도를 비교한다. provider/model/preset 등
+            // 응답 형태가 다른 엔트리는 아무리 프롬프트가 같아도 후보에서 제외한다.
+            if (entry.namespace != namespace) continue
             val similarity = dot(embedding, entry.embedding)
             if (similarity > bestSimilarity) {
                 bestSimilarity = similarity
@@ -31,11 +34,11 @@ class InMemoryCosineResponseCache(
         return if (best != null && bestSimilarity >= threshold) best.response else null
     }
 
-    override fun store(embedding: FloatArray, response: String) {
+    override fun store(namespace: String, embedding: FloatArray, response: String) {
         while (entries.size >= maxEntries) {
             entries.pollFirst()
         }
-        entries.addLast(Entry(embedding, response))
+        entries.addLast(Entry(namespace, embedding, response))
     }
 
     private fun dot(a: FloatArray, b: FloatArray): Double {

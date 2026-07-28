@@ -39,8 +39,9 @@ class ChatCompletionUseCase(
         val providerId = request.providerId ?: defaultProvider
 
         if (cacheEnabled) {
+            val namespace = cacheNamespaceOf(providerId, request)
             val embedding = embedder.embed(promptTextOf(budget))
-            val cached = responseCache.lookup(embedding)
+            val cached = responseCache.lookup(namespace, embedding)
             if (cached != null) {
                 usageSink.record(
                     UsageRecord(
@@ -56,10 +57,16 @@ class ChatCompletionUseCase(
                 )
                 return flowOf(TokenChunk(text = cached, index = 0))
             }
-            return streamFromProvider(providerId, budget, request, embeddingToStore = embedding)
+            return streamFromProvider(
+                providerId, budget, request,
+                embeddingToStore = embedding, cacheNamespace = namespace,
+            )
         }
 
-        return streamFromProvider(providerId, budget, request, embeddingToStore = null)
+        return streamFromProvider(
+            providerId, budget, request,
+            embeddingToStore = null, cacheNamespace = null,
+        )
     }
 
     private fun streamFromProvider(
@@ -67,6 +74,7 @@ class ChatCompletionUseCase(
         budget: BudgetResult,
         request: CompletionRequest,
         embeddingToStore: FloatArray?,
+        cacheNamespace: String?,
     ): Flow<TokenChunk> {
         val provider = registry.resolve(providerId)
         val effective = request.copy(messages = budget.messages)
@@ -99,14 +107,30 @@ class ChatCompletionUseCase(
                         cacheHit = false,
                     ),
                 )
-                if (cause == null && embeddingToStore != null) {
-                    responseCache.store(embeddingToStore, collected.toString())
+                if (cause == null && embeddingToStore != null && cacheNamespace != null) {
+                    responseCache.store(cacheNamespace, embeddingToStore, collected.toString())
                 }
             }
     }
 
     private fun promptTextOf(budget: BudgetResult): String =
         budget.messages.joinToString("\n") { it.content }
+
+    /**
+     * 캐시 격리 키. 응답 형태를 좌우하는 파라미터를 정규화해 조합한다.
+     * 시맨틱 유사도는 프롬프트 임베딩으로 계산하되, 매칭 후보는 이 키가 일치하는 엔트리로만 한정한다.
+     * - provider: 공급자가 다르면 같은 프롬프트라도 응답이 다르다(교차 오염 방지의 핵심).
+     * - model: 같은 공급자라도 모델별 출력이 다르다. null(어댑터 기본)은 빈 문자열로 정규화.
+     * - preset: temperature/top_p 등 디코딩 파라미터가 출력 분포를 바꾼다.
+     * - maxOutputTokens: 응답 길이 상한이 다르면 잘림 여부가 달라진다.
+     */
+    private fun cacheNamespaceOf(providerId: ProviderId, request: CompletionRequest): String =
+        listOf(
+            providerId.name,
+            request.model ?: "",
+            request.preset.name,
+            request.maxOutputTokens.toString(),
+        ).joinToString("|")
 
     /**
      * 공급자 호출 전에 레이트 리밋을 강제한다.

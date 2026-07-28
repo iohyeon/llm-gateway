@@ -26,12 +26,17 @@ interface Embedder {
 
 /**
  * 임베딩 유사도 기반 응답 캐시 포트.
- * lookup: 임계값 이상 유사한 캐시가 있으면 응답 텍스트, 없으면 null.
- * store: 임베딩과 응답을 저장.
+ * lookup: 같은 namespace 안에서 임계값 이상 유사한 캐시가 있으면 응답 텍스트, 없으면 null.
+ * store: namespace·임베딩·응답을 저장.
+ *
+ * namespace 는 응답 형태를 좌우하는 파라미터(provider·model·preset·maxOutputTokens 등)를
+ * 정규화한 격리 키다. 시맨틱 유사도(코사인)는 같은 namespace 안에서만 비교하므로,
+ * 예컨대 OpenAI 요청이 Gemini/FAKE 가 채운 캐시를 히트하는 교차 오염이 발생하지 않는다.
+ * 프롬프트 텍스트를 오염시키지 않아 임베딩 기하(코사인 유사도)의 의미도 그대로 보존된다.
  */
 interface ResponseCache {
-    fun lookup(embedding: FloatArray): String?
-    fun store(embedding: FloatArray, response: String)
+    fun lookup(namespace: String, embedding: FloatArray): String?
+    fun store(namespace: String, embedding: FloatArray, response: String)
 }
 
 /**
