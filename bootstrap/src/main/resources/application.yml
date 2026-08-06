@@ -26,6 +26,15 @@ gateway:
   cache-enabled: ${CACHE_ENABLED:false}
   cache-similarity-threshold: 0.97
   cache-max-entries: 1000
+  # 공급자 회복탄력성: 흩어진 타임아웃/재시도를 게이트웨이가 집약한다.
+  # connect: TCP 연결 상한. response: 응답(헤더) 수신 상한(스트림 시작 후 해제).
+  # read-idle: 읽기 유휴 상한(헤더 수신 후 스트림 hang 차단).
+  # max-retries/backoff: 일시적 오류(타임아웃/5xx/연결거부) 한정 지수 백오프 재시도.
+  provider-connect-timeout-millis: ${PROVIDER_CONNECT_TIMEOUT_MS:2000}
+  provider-response-timeout-millis: ${PROVIDER_RESPONSE_TIMEOUT_MS:30000}
+  provider-read-idle-timeout-millis: ${PROVIDER_READ_IDLE_TIMEOUT_MS:60000}
+  provider-max-retries: ${PROVIDER_MAX_RETRIES:2}
+  provider-retry-backoff-millis: ${PROVIDER_RETRY_BACKOFF_MS:200}
 
 anthropic:
   # BYO-key: 레포에 값이 없다. .env 또는 환경변수로만 주입한다.

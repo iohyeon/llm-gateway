@@ -29,7 +29,6 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.data.redis.core.StringRedisTemplate
-import org.springframework.web.reactive.function.client.WebClient
 
 /**
  * 조립 계층. 순수 도메인·유스케이스를 빈으로 연결한다.
@@ -59,9 +58,8 @@ class GatewayConfig {
      */
     @Bean
     @ConditionalOnProperty(prefix = "anthropic", name = ["api-key"], matchIfMissing = false)
-    fun anthropicProvider(props: AnthropicProperties): LlmProvider {
-        val webClient = WebClient.builder()
-            .baseUrl(props.baseUrl)
+    fun anthropicProvider(props: AnthropicProperties, gateway: GatewayProperties): LlmProvider {
+        val webClient = ProviderWebClients.resilientBuilder(props.baseUrl, gateway.providerResilience())
             .defaultHeader("x-api-key", props.apiKey)
             .defaultHeader("anthropic-version", "2023-06-01")
             .build()
@@ -74,9 +72,8 @@ class GatewayConfig {
      */
     @Bean
     @ConditionalOnProperty(prefix = "openai", name = ["api-key"], matchIfMissing = false)
-    fun openAiProvider(props: OpenAiProperties): LlmProvider {
-        val webClient = WebClient.builder()
-            .baseUrl(props.baseUrl)
+    fun openAiProvider(props: OpenAiProperties, gateway: GatewayProperties): LlmProvider {
+        val webClient = ProviderWebClients.resilientBuilder(props.baseUrl, gateway.providerResilience())
             .defaultHeader("Authorization", "Bearer ${props.apiKey}")
             .build()
         return OpenAiProvider(webClient = webClient, model = props.model)
@@ -85,9 +82,8 @@ class GatewayConfig {
     /** GEMINI_API_KEY 가 설정된 경우에만 등록한다. 세 공급자 중 가장 풍부한 프리셋 번역. */
     @Bean
     @ConditionalOnProperty(prefix = "gemini", name = ["api-key"], matchIfMissing = false)
-    fun geminiProvider(props: GeminiProperties): LlmProvider {
-        val webClient = WebClient.builder()
-            .baseUrl(props.baseUrl)
+    fun geminiProvider(props: GeminiProperties, gateway: GatewayProperties): LlmProvider {
+        val webClient = ProviderWebClients.resilientBuilder(props.baseUrl, gateway.providerResilience())
             .defaultHeader("x-goog-api-key", props.apiKey)
             .build()
         return GeminiProvider(webClient = webClient, model = props.model)
