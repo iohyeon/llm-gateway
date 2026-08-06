@@ -5,10 +5,23 @@ import com.llmgateway.core.provider.ProviderId
 import com.llmgateway.core.usage.CostEstimate
 import com.llmgateway.core.usage.UsageRecord
 
-/** 공급자 식별자로 활성 공급자를 해석하는 포트. 구현은 조립 계층(bootstrap). */
+/**
+ * 공급자 식별자로 활성 공급자를 해석하는 포트. 구현은 조립 계층(bootstrap).
+ * 요청한 공급자가 등록되지 않았으면 UnknownProviderException 을 던진다.
+ */
 interface ProviderRegistry {
     fun resolve(id: ProviderId): LlmProvider
 }
+
+/**
+ * 요청한 공급자가 활성(등록) 목록에 없음을 알린다.
+ * 원인은 클라이언트가 게이트웨이에 배선되지 않은 공급자를 지정한 것이므로
+ * 서버 내부 오류(500)가 아니라 클라이언트 대상 오류다. 인바운드 어댑터가 404 로 매핑한다.
+ */
+class UnknownProviderException(
+    val requested: ProviderId,
+    val active: Set<ProviderId>,
+) : RuntimeException("등록되지 않은 공급자: $requested (활성 공급자: $active)")
 
 /** 호출 단위 사용량 기록 싱크. 로깅·메트릭·저장 등 구현은 어댑터. */
 interface UsageSink {

@@ -1,6 +1,7 @@
 package com.llmgateway.web
 
 import com.llmgateway.application.RateLimitExceededException
+import com.llmgateway.application.UnknownProviderException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -17,6 +18,23 @@ class ApiExceptionHandler {
         ResponseEntity
             .status(HttpStatus.TOO_MANY_REQUESTS)
             .body(mapOf("error" to "rate_limited", "clientId" to e.clientId))
+
+    /**
+     * 등록되지 않은 공급자 요청 → 404.
+     * 배선되지 않은 공급자를 클라이언트가 지정한 경우로, 서버 버그(500)가 아니라
+     * 요청이 존재하지 않는 자원을 가리킨 것이다. 활성 공급자 목록을 함께 노출해 진단을 돕는다.
+     */
+    @ExceptionHandler(UnknownProviderException::class)
+    fun handleUnknownProvider(e: UnknownProviderException): ResponseEntity<Map<String, Any>> =
+        ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(
+                mapOf(
+                    "error" to "unknown_provider",
+                    "requested" to e.requested.name,
+                    "active" to e.active.map { it.name },
+                ),
+            )
 
     /**
      * 공급자(업스트림) HTTP 오류를 502 로 매핑하고 실제 상태·바디를 노출한다.
